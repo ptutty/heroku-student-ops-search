@@ -11,8 +11,11 @@
     "test": "node test.js"
   },
   "dependencies": {
+    "del": "^5.0.0",
     "ejs": "^2.5.6",
-    "express": "^4.15.2"
+    "express": "^4.15.2",
+    "json-stringify-safe": "^5.0.1",
+    "node-fetch": "^2.6.0"
   },
   "devDependencies": {
     "request": "^2.81.0",
