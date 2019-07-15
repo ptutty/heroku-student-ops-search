@@ -4,7 +4,7 @@ const stringify = require('json-stringify-safe');
 const fetch = require("node-fetch");
 const fs = require('fs');
 const del = require('del');
-const searchConfig = require('./config/searchConfig');
+const searchConfig = require('./config/searchconfig');
 //const searchApp = require('./app/searchApp');
 const PORT = process.env.PORT || 5000
 
