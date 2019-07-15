@@ -1,7 +1,7 @@
 {
-  "name": "node-js-getting-started",
+  "name": "Student-Ops-Search-Index-Generator",
   "version": "0.3.0",
-  "description": "A sample Node.js app using Express 4",
+  "description": "This is a Node / Express application deployed to Heroku. It provides a dashboard to trigger the crawling of the Warwick search API and the writing of search.json file which is used by the frontend as a search index.",
   "engines": {
     "node": "10.x"
   },
@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/heroku/node-js-getting-started"
+    "url": "https://github.com/ptutty/heroku-student-ops-search"
   },
   "keywords": [
     "node",
