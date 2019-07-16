@@ -2,9 +2,7 @@ const _ = require('lodash');
 const fs = require("fs-extra");
 const del = require('del');
 const fetch = require("node-fetch");
-const {
-    RateLimit
-} = require('async-sema'); // for 
+const {RateLimit} = require('async-sema'); // for throttling API calls
 const stringify = require('json-stringify-safe');
 const searchItems = require('./seeds/keywords'); // warwick domains and keywords to search
 const searchConfig = require('./config/searchconfig'); // config for saving files /urls etc..
@@ -26,19 +24,14 @@ const searchApp = {
         return a;
     },
 
-    fetchUrlArray: async function (urlArray) {
-        // await helpers.prepare();
-        
+    fetchUrlArray: async function (urlArray) {     
         const lim = RateLimit(searchConfig.throttle); // throttle api calls
         const allResults = urlArray.map(async (url, index) => {
-           // console.log("fetching " + url);
         await lim();
             return await fetch(url)
                 .then(res => res.json())
                 .then(json => {
-                    // console.log(json.results[0].title)
-                    return json.results[0];
-                    // return helpers.resultTidy(json.results[0], url, index); // return result
+                    return this.resultTidy(json.results[0], url, index); // return result
                 });
         });
 
@@ -77,7 +70,9 @@ const searchApp = {
 
     /* writes search results to disk as json file */
     writeFile: function (results) {
-        fs.writeFile(searchConfig.writePath + searchConfig.fileName, stringify(results), function (err) {
+        const fullPath = __dirname + "/../" + searchConfig.writePath + searchConfig.fileName;
+        console.log(fullPath);
+        fs.writeFile(fullPath, stringify(results), function (err) {
             if (err) {
                 return console.log(err);
             }

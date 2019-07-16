@@ -3,12 +3,13 @@ const path = require('path')
 const PORT = process.env.PORT || 5000
 const searchApp = require('./searchapp/searchapp');
 
-function getResults(res) {
+async function getResults(res) {
+  await searchApp.prepare();
   const urlArray = searchApp.makeUrlArray();
   searchApp.fetchUrlArray(urlArray)
     .then(results => {
-      res.send(results);
-      console.log("results fetch successful");
+      searchApp.writeFile(results);
+      res.send("<p>You can find the <a href='data/docs_to_index.json'>newly generated search index here.</a> Save it and upload it to Sitebuilder.</p>");
     })
     .catch(err => console.log("An error occurred", err));
 }
