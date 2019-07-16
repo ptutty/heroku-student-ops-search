@@ -2,14 +2,28 @@ const _ = require('lodash');
 const fs = require("fs-extra");
 const del = require('del');
 const fetch = require("node-fetch");
-const {RateLimit} = require('async-sema'); // for throttling API calls
-const stringify = require('json-stringify-safe');
+const {
+    RateLimit
+} = require('async-sema'); // for throttling API calls
 const searchItems = require('./seeds/keywords'); // warwick domains and keywords to search
 const searchConfig = require('./config/searchconfig'); // config for saving files /urls etc..
-// const searchOverRides = require('../seed-data/searchOverrides');
-
 
 const searchApp = {
+
+    searchInit: async function (res) {
+        await this.prepare(); // delete old file
+        this.fetchUrlArray()
+            .then(async results => {
+                //do we need to customise results?
+                if (searchConfig.override){
+                    results = this.customResults(results);
+                }
+                res.send(await this.writeFile(results));
+                
+            })
+            .catch(err => console.log("An error occurred", err));
+    },
+
     /* creates an array of api endpoints based on data from /seed-data/searchseed.js */
     makeUrlArray: function () {
         let a = [];
@@ -24,10 +38,11 @@ const searchApp = {
         return a;
     },
 
-    fetchUrlArray: async function (urlArray) {     
-        const lim = RateLimit(searchConfig.throttle); // throttle api calls
+    fetchUrlArray: async function (urlArray) {
+        const urlArray = this.makeUrlArray();
+        const lim = RateLimit(searchConfig.throttle); // throttle api calls   
         const allResults = urlArray.map(async (url, index) => {
-        await lim();
+            await lim();
             return await fetch(url)
                 .then(res => res.json())
                 .then(json => {
@@ -40,6 +55,7 @@ const searchApp = {
 
     /* allow overwriting of generated results using data from searchoverrides.json */
     customResults: function (results) {
+        const searchOverRides = require('./config/customsearch.json');
         console.log("adding custom results...");
         results.forEach(function (el, index) {
             searchOverRides.forEach(function (rep_el, index) {
@@ -69,15 +85,16 @@ const searchApp = {
     },
 
     /* writes search results to disk as json file */
-    writeFile: function (results) {
+    writeFile: async function (results) {
         const fullPath = __dirname + "/../" + searchConfig.writePath + searchConfig.fileName;
-        console.log(fullPath);
-        fs.writeFile(fullPath, stringify(results), function (err) {
-            if (err) {
-                return console.log(err);
-            }
-            console.log("Completed. JSON search index file created here: " + searchConfig.writePath + searchConfig.fileName);
-        });
+        try {
+            await fs.writeJson( fullPath, results );
+            let message = `<p>Completed. <a href="/data/${searchConfig.fileName}">JSON search index file created here</a></p>`;
+            console.log('success!')
+            return message;
+        } catch (err) {
+            console.error(err)
+        }
     },
 
     // delete current search result file
