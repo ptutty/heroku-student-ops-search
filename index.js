@@ -4,7 +4,6 @@ const PORT = process.env.PORT || 5000
 const searchApp = require('./searchapp/searchapp');
 
 
-
 express()
   .use(express.static(path.join(__dirname, 'public')))
   .set('views', path.join(__dirname, 'views'))

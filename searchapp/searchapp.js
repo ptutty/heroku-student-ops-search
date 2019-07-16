@@ -38,7 +38,7 @@ const searchApp = {
         return a;
     },
 
-    fetchUrlArray: async function (urlArray) {
+    fetchUrlArray: async function () {
         const urlArray = this.makeUrlArray();
         const lim = RateLimit(searchConfig.throttle); // throttle api calls   
         const allResults = urlArray.map(async (url, index) => {
