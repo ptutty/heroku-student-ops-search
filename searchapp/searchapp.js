@@ -5,27 +5,37 @@ const fetch = require("node-fetch");
 const {
     RateLimit
 } = require('async-sema'); // for throttling API calls
-const searchItems = require('./seeds/keywords'); // warwick domains and keywords to search
+
+const searchItems = require('../public/data/teams');
 const searchConfig = require('./config/searchconfig'); // config for saving files /urls etc..
 
 const searchApp = {
-
     searchInit: async function (res) {
         await this.prepare(); // delete old file
         this.fetchUrlArray()
             .then(async results => {
                 //do we need to customise results?
-                if (searchConfig.override){
+                if (searchConfig.override) {
                     results = this.customResults(results);
                 }
-                res.send(await this.writeFile(results));
-                
+                let message;
+                if (await this.writeFile(results)) {
+                    message = "Index successfully written";
+                } else {
+                    message = "There was a problem with writing file";
+                }
+                res.send(message);
+
             })
-            .catch(err => console.log("An error occurred", err));
+            .catch(err => function () {
+                console.log("search-init error log", err);
+                res.send(err);
+            });
     },
 
     /* creates an array of api endpoints based on data from /seed-data/searchseed.js */
     makeUrlArray: function () {
+        
         let a = [];
         searchItems.forEach(function (team) {
             var apiUrl = searchConfig.apiBase + "urlPrefix=" + team.url + "&resultsPerPage=" + searchConfig.resultsNum;
@@ -35,6 +45,7 @@ const searchApp = {
                 a.push(apiUrl + "&q=" + keywords[i]);
             }
         });
+        
         return a;
     },
 
@@ -85,15 +96,21 @@ const searchApp = {
     },
 
     /* writes search results to disk as json file */
-    writeFile: async function (results) {
-        const fullPath = __dirname + "/../" + searchConfig.writePath + searchConfig.fileName;
+    writeFile: async function (results, filename) {
+        var fullPath;
+        if (!filename) {
+            fullPath = __dirname + "/../" + searchConfig.writePath + searchConfig.fileName;
+        } else {
+            fullPath = __dirname + "/../" + searchConfig.writePath + filename;
+        }
+
         try {
-            await fs.writeJson( fullPath, results );
-            let message = `<p>Completed. <a href="/data/${searchConfig.fileName}">JSON search index file created here</a></p>`;
+            await fs.writeJson(fullPath, results);
             console.log('success!')
-            return message;
+            return true;
         } catch (err) {
             console.error(err)
+            return false;
         }
     },
 
@@ -102,6 +119,14 @@ const searchApp = {
         await del([`${searchConfig.fileName}*.json`], {
             force: true
         });
+    },
+
+    updateSeeds: async function (req, res) {
+        let filename = "teams.json";
+        let updatedTeamsJson = req.body.data
+
+        // above req body needs to be parse back into json beline below is used
+        // await this.writeFile(updatedTeamsJson, filename);
     }
 }
 

@@ -9,10 +9,16 @@ var app = new Vue({
     methods: {
         createIndex: function (event) {
             console.log("creating index");
-            this.message = "collecting results"
-            // axios
-            //     .get('/results')
-            //     .then(response => (this.message = response))
+            this.message = "Polling API endpoints.. please wait"
+            axios
+                .get('/results')
+                .then(response => (this.message = response.data))
+        },
+        saveSeedEdits: function (updatedJson) {
+            axios.post('/update', {
+                data: updatedJson, 
+            });
+
         }
     }
 })

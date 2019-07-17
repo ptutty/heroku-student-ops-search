@@ -1,4 +1,4 @@
-const searchItems = [{
+[{
         "team": "careers",
         "url": "https://warwick.ac.uk/services/careers",
         "keywords": ["careers appointments", "careers advice", "CVs", "careers", "covering letters", "careers fair", "work experience", "jobs", "careers guidance", "job vacancies", "applications", "job interviews", "advisor", "careers advisor", "internships", "Career planning", "further study", "WSI", "warwick summer internships", "myAdvantage", "assessment centres", "psychometric and aptitude tests", "graduate outcomes", "workshops", "myadvantage", "employability", "Applying for jobs", "job search", "job application", "strengthes", "personality types", "careers advisor"]
@@ -32,10 +32,6 @@ const searchItems = [{
         "team": "Welcome",
         "url": "https://warwick.ac.uk/students/welcome",
         "keywords": ["Before you arrive", "Checklist for new students", "Enrolment", "Funding and Finance", "Campus Maps", "Arrivals Instructions", "Airport Transfer Service", "What to bring", "Welcome Week", "Parents and Supporters", "Course Registration"]
-    },
+    }
 
-];
-
-
-
-module.exports = searchItems;
+]

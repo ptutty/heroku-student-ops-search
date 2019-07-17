@@ -1,6 +1,6 @@
 const searchConfig = {
     "apiBase": "https://warwick.ac.uk/ajax/lvsch/query.json?",
-     "throttle": 10, // rps so as not to over load server API servers. 
+     "throttle": 50, // rps so as not to over load server API servers. 
     "resultsNum": 1, // get only 1st result from search API results
     "override": true, // overwrite search data with manual file: searchoverrides.json
     "writePath": "public/data/", // where to save final compiled index file
