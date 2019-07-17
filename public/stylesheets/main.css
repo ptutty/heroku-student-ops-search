@@ -38,3 +38,36 @@
   max-width: 100%;
 }
 
+input {
+  width: 300px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  background-color: transparent;
+  position: absolute;
+  -webkit-appearance: none;
+}
+
+#autocomplete {
+  color: #999;
+  background-color: #f5f5f5;
+}
+
+input {
+  padding: 7px 5px;
+  box-sizing: border-box;
+}
+
+#suggestions {
+  position: relative;
+  top: 50px;
+}
+
+#suggestions div {
+  padding: 10px 0;
+  margin: 0 8px;
+  border-bottom: 1px solid #ddd;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

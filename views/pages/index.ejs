@@ -12,11 +12,13 @@
 <div class="jumbotron text-center">
   <div class="container">
     <h2>Student Opportunity Search Index Generator</h2>
-    <p>Creates a search index of websites within Student Opportunity. Uses the Warwick search API to get first result for given keyword search. Outputs a json file to be uploaded to Sitebuilder for use with Fuse.js a client sidesearch framework.</p>
+    <p>Creates a search index of websites within Student Opportunity. Uses the Warwick search API to get first result
+      for given keyword search. Outputs a json file to be uploaded to Sitebuilder for use with <a href="https://github.com/nextapps-de/flexsearch">FlexSearch.js </a>a client side search framework.</p>
 
+    </a>
     <button type="button" class="btn btn-lg btn-default" v-on:click="createIndex" ><span
         class="glyphicon glyphicon-flash"></span>Create new index</button>
-    <a type="button" class="btn btn-lg btn-primary" href="/edit"><span class="glyphicon glyphicon-download"></span> Download index</a>
+    <a type="button" class="btn btn-lg btn-primary" href="/data/docs_to_index.json"><span class="glyphicon glyphicon-download"></span> Download index</a>
   </div>
   
 </div>
@@ -29,26 +31,24 @@
   <hr>
   <div class="row">
     <div class="col-md-6">
-      <h3><span class="glyphicon glyphicon-info-sign"></span> How this sample app works</h3>
+      <h3><span class="glyphicon glyphicon-info-sign"></span> How this app works</h3>
       <ul>
-        <li>This app was deployed to Heroku, either using Git or by using <a href="https://github.com/heroku/node-js-getting-started">Heroku Button</a> on the repository.</li>
-
-        <li>When Heroku received the source code, it fetched all the dependencies in the <a href="https://github.com/heroku/node-js-getting-started/blob/master/package.json">package.json</a>, creating a deployable slug.</li>
-        <li>The platform then spins up a dyno, a lightweight container that provides an isolated environment in which the slug can be mounted and executed.</li>
-        <li>You can scale your app, manage it, and deploy over <a href="https://addons.heroku.com/">150 add-on services</a>, from the Dashboard or CLI.</li>
+        <li>Polls Warwick search API using url prefixes and keywords list.</li>
+        <li>Generated initial array of objects <code>{id, title, url, keywords} </code> </li>
+        <li>Allows over riding of array object if neccessary base on keyword</li>
+        <li>Writes final results to a json file for use with frontend search library FlexSearch.js</li>
       </ul>
     </div>
     <div class="col-md-6 course-search">
-      <h3><span class="glyphicon glyphicon-link"></span> Test it out</h3>
-      <p>Make sure to hard reload(Ctl + reload) the page. Before looking for new results below.</p>
+      <h3><span class="glyphicon glyphicon-link"></span>Test out search keywords </h3>
+    <!-- autocomplete search box-->
 
-     <input type="text" id="autocomplete-input" class="autocomplete">
-     <label for="autocomplete-input"></label>
-     <ul class="autocomplete-content dropdown-content ac-dropdown active"
-       style="width: 641px; position: absolute; top: 56.3906px; left: 10.5px; opacity: 1; display: none;">
-     </ul>
+      <input type="text" id="autocomplete">
+      <input type="text" id="userinput" placeholder="Search by keyword etc..">
 
-      
+      <div id="suggestions"></div>
+
+     <!-- --> 
     </div>
   </div> <!-- row -->
   
@@ -57,8 +57,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.16.6/lodash.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue"></script>
-
 <script src="/js/vue-code.js"></script>
-
+<script src="/js/flexsearch.compact.js"></script>
+<script src="/js/autocomplete.js"></script>
 </body>
 </html>
+<!--  -->
