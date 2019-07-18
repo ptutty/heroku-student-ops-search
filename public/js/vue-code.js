@@ -8,17 +8,16 @@ var app = new Vue({
     },
     methods: {
         createIndex: function (event) {
-            console.log("creating index");
             this.message = "Polling API endpoints.. please wait"
             axios
                 .get('/results')
                 .then(response => (this.message = response.data))
         },
         saveSeedEdits: function (updatedJson) {
+            this.message = "Team data updated";
             axios.post('/update', {
                 data: updatedJson, 
             });
-
         }
     }
 })
