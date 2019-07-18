@@ -18,14 +18,8 @@ const searchApp = {
                 if (searchConfig.overRide) {
                     results = this.customResults(results);
                 }
-                let message;
-                if (await this.writeFile(results, searchConfig.fileName)) {
-                    message = "Index successfully written";
-                } else {
-                    message = "There was a problem with writing file";
-                }
-                res.send(message);
-
+                const status = await this.writeFile(results, searchConfig.fileName);
+                this.userMessage(status, res);
             })
             .catch(err => function () {
                 console.log("search-init error log", err);
@@ -36,7 +30,6 @@ const searchApp = {
     /* creates an array of api endpoints based on data from /data/teams.json */
     makeUrlArray: async function () {            
         const teams = await this.readJsonFile('teams.json');
-
         let a = [];
         teams.forEach(function (team) {
             var apiUrl = searchConfig.apiBase + "urlPrefix=" + team.url + "&resultsPerPage=" + searchConfig.resultsNum;
@@ -63,11 +56,11 @@ const searchApp = {
     },
 
     /* allow overwriting of generated results using data from searchoverrides.json */
-    customResults: function (results) {
-        const searchOverRides = require('./config/customsearch.json');
+    customResults: async function (results) {
+        const customResults = await this.readJsonFile('customresults.json');
         console.log("adding custom results...");
         results.forEach(function (el, index) {
-            searchOverRides.forEach(function (rep_el, index) {
+            customResults.forEach(function (rep_el, index) {
                 let keyword_rep = rep_el['keyword'].toLowerCase();
                 let keyword_orig = el['keyword'].toLowerCase();
                 if (keyword_rep === keyword_orig) {
@@ -103,11 +96,9 @@ const searchApp = {
         }
     },
 
-
     /* writes search results to disk as json file */
     writeFile: async function (results, filename) {
         let fullPath = __dirname + "/../" + searchConfig.writePath + filename;
-        console.log(fullPath);
         try {
             await fs.writeJson(fullPath, results);
             console.log('success!')
@@ -127,11 +118,21 @@ const searchApp = {
             });
         }
     },
-    // updates teams.json
-    updateSeeds: async function (req, res) {
-        let filename = "teams.json";
+    // updates teams.json and customsearch.json
+    updateFile: async function (req, res) {
+        let filename = req.body.filename;
         await this.deleteFile(filename); // delete old file;
         await this.writeFile(JSON.parse(req.body.data), filename); // write newfile
+    },
+
+    userMessage: function (status, res) { // expand message types with switch, pass in message type.
+        let message;
+        if (status) {
+            message = "Index successfully written";
+        } else {
+            message = "There was a problem with writing file";
+        }
+        res.send(message);
     }
 }
 

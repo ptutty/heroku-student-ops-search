@@ -2,6 +2,9 @@
 node_modules
 npm-debug.log
 
+#data files
+public/data/
+
 # Local development
 *.env
 *.dev

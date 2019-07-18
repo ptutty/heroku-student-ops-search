@@ -12,10 +12,11 @@ express()
   .set('view engine', 'ejs')
   .get('/', (req, res) => res.render('pages/index'))
   // editing seed json file
-  .get('/editor', (req, res) => res.render('pages/editor'))
+  .get('/editor/:id', (req, res) => res.render('pages/editor', {
+    slug: req.params.id}))
   // endpoint to kick start API crawl and writing of json
   .get('/results', (req, res) => searchApp.searchInit(res)) 
   // endpoint for saving edits to the json file using jsoneditor
-  .post('/update', (req, res) => searchApp.updateSeeds(req,res))
+  .post('/update', (req, res) => searchApp.updateFile(req,res))
 
   .listen(PORT, () => console.log(`Listening on ${ PORT }`))
