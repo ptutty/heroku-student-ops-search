@@ -13,11 +13,12 @@ var app = new Vue({
                 .get('/results')
                 .then(response => (this.message = response.data))
         },
-        updateFile: function (updatedJson, filename) {
-            this.message = "data updated";
+        updateFile: function (updatedJson, filename, crawl) {
+            this.message = "data updated and saved";
             axios.post('/update', {
                 data: updatedJson,
-                filename: filename
+                filename: filename,
+                crawl: crawl
             });
         }
     }

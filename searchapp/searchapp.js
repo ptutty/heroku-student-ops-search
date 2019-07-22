@@ -8,29 +8,21 @@ const {
 const searchConfig = require('./config/searchconfig'); // config for saving files /urls etc..
 
 const searchApp = {
+
+     /**
+      * @param res Response object from express
+      */
     searchInit: async function (res) {
-        await this.deleteFile(searchConfig.fileName); // delete old file
         const urlArray = await this.makeUrlArray();
-        var finalResults = null;
-        this.fetchUrlArray(urlArray)
-            .then(async results => {
-                if (searchConfig.overRide) { //customise results if config flag is set = true
-                    finalResults = await this.customResults(results);
-                } else {
-                    finalResults = results;
-                }
-                const status = await this.writeFile(finalResults, searchConfig.fileName);
-                this.userMessage(status, res);
-            })
-            .catch(err => function () {
-                console.log("search-init error log", err);
-                res.send(err);
-            });
+        const results = await this.fetchUrlArray(urlArray);
+        const customResults = await this.customResults(results);
+        const status = await this.writeFile(customResults, searchConfig.indexFilename);
+        this.userMessage(status, res);
     },
 
     /* creates an array of api endpoints based on data from /data/teams.json */
     makeUrlArray: async function () {            
-        const teams = await this.readJsonFile('teams.json');
+        const teams = await this.readJsonFile(searchConfig.teamsFilename);
         let a = [];
         teams.forEach(function (team) {
             var apiUrl = searchConfig.apiBase + "urlPrefix=" + team.url + "&resultsPerPage=" + searchConfig.resultsNum;
@@ -44,6 +36,7 @@ const searchApp = {
     },
 
     fetchUrlArray: async function (urlArray) {
+        console.log("crawling search API using url prefixes and keywords");
         const lim = RateLimit(searchConfig.throttle); // throttle api calls   
         const allResults = urlArray.map(async (url, index) => {
             await lim();
@@ -53,13 +46,13 @@ const searchApp = {
                     return this.resultTidy(json.results[0], url, index); // return result
                 });
         });
+
         return await Promise.all(allResults); // when all promises are processed return all results as array
     },
 
     /* allow overwriting of generated results using data from searchoverrides.json */
     customResults: async function (results) {
-        const customResults = await this.readJsonFile('customresults.json');
-        console.log("adding custom results...");
+        const customResults = await this.readJsonFile(searchConfig.customFilename);
         results.forEach(function (origItem) {
             customResults.forEach(function (customItem) {
                 let customKeyword = customItem['keyword'].toLowerCase();
@@ -72,6 +65,7 @@ const searchApp = {
                 }
             })
         });
+        console.log('customise results success!')
         return results;
     },
 
@@ -98,10 +92,11 @@ const searchApp = {
 
     /* writes search results to disk as json file */
     writeFile: async function (results, filename) {
+        await this.deleteFile(filename);
         let fullPath = __dirname + "/../" + searchConfig.writePath + filename;
         try {
             await fs.writeJson(fullPath, results);
-            console.log('success!')
+            console.log(fullPath + ' write file success!')
             return true;
         } catch (err) {
             console.error(err)
@@ -118,11 +113,20 @@ const searchApp = {
             });
         }
     },
-    // updates teams.json and customsearch.json
+    // updates teams.json and customsearch.json and creates new index
     updateFile: async function (req, res) {
         let filename = req.body.filename;
         await this.deleteFile(filename); // delete old file;
-        await this.writeFile(JSON.parse(req.body.data), filename); // write newfile
+        await this.writeFile(JSON.parse(req.body.data), filename); // write newfile 
+
+        if (req.body.crawl) { // do fresh crawl
+            this.searchInit(res); 
+        } else { // no crawl just update current index
+            const results = await this.readJsonFile(searchConfig.indexFilename);
+            const customResults = await this.customResults(results);
+            const status = await this.writeFile(customResults, searchConfig.indexFilename);
+            this.userMessage(status, res);
+        }
     },
 
     userMessage: function (status, res) { // expand message types with switch, pass in message type.
