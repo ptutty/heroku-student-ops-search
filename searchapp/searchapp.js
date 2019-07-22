@@ -11,14 +11,15 @@ const searchApp = {
     searchInit: async function (res) {
         await this.deleteFile(searchConfig.fileName); // delete old file
         const urlArray = await this.makeUrlArray();
-
+        var finalResults = null;
         this.fetchUrlArray(urlArray)
             .then(async results => {
-                //do we need to customise results?
-                if (searchConfig.overRide) {
-                    results = this.customResults(results);
+                if (searchConfig.overRide) { //customise results if config flag is set = true
+                    finalResults = await this.customResults(results);
+                } else {
+                    finalResults = results;
                 }
-                const status = await this.writeFile(results, searchConfig.fileName);
+                const status = await this.writeFile(finalResults, searchConfig.fileName);
                 this.userMessage(status, res);
             })
             .catch(err => function () {
@@ -59,16 +60,15 @@ const searchApp = {
     customResults: async function (results) {
         const customResults = await this.readJsonFile('customresults.json');
         console.log("adding custom results...");
-        results.forEach(function (el, index) {
-            customResults.forEach(function (rep_el, index) {
-                let keyword_rep = rep_el['keyword'].toLowerCase();
-                let keyword_orig = el['keyword'].toLowerCase();
-                if (keyword_rep === keyword_orig) {
-                    //console.log("replacing " + el['keyword']);
-                    if (rep_el['link']) {
-                        el['link'] = rep_el['link'];
+        results.forEach(function (origItem) {
+            customResults.forEach(function (customItem) {
+                let customKeyword = customItem['keyword'].toLowerCase();
+                let origKeyword = origItem['keyword'].toLowerCase();
+                if (customKeyword === origKeyword) {
+                    if (customItem['link']) {
+                        origItem['link'] = customItem['link'];
                     }
-                    el['title'] = rep_el['title'];
+                    origItem['title'] = customItem['title'];
                 }
             })
         });
