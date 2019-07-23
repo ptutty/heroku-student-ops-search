@@ -3,29 +3,34 @@ var app = new Vue({
     el: '#app',
     data() {
         return {
-            message: null,
-            lastIndex: null
+            message: null
         }
     },
     methods: {
         createIndex: async function (event) {
-            this.message = "Polling API endpoints.. please wait"
+            this.message = "Generating index ... please wait"
             try {
-                const response = await axios.get('/results');
+                let response = await axios.get('/create');
                 this.message = response.data.message;
-                this.lastIndex = response.data.lastIndex;
             } catch (error) {
                 this.message = error
             }
 
         },
-        updateFile: function (updatedJson, filename, crawl) {
-            this.message = "data updated and saved";
-            axios.post('/update', {
-                data: updatedJson,
-                filename: filename,
-                crawl: crawl
-            });
+        updateFile: async function (updatedJson, filename, crawl) {
+            this.message = "Saving data ...and reindexing";
+            console.log("updatefile");
+            let payload = {};
+            payload.data = updatedJson;
+            payload.filename = filename;
+            payload.crawl = crawl;
+            try {
+                let response = await axios.post('/update', payload);
+                this.message = response.data.message;
+            } catch (error) {
+                this.message = error
+            }
+
         }
     }
 })

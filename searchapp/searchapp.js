@@ -13,20 +13,27 @@ const searchApp = {
     /**
      * @param res Response object from express
      */
-    searchInit: async function (res) {
+    createNewIndex: async function (res) {
         try {
             const urlArray = await this.makeUrlArray();
-            const results = await this.fetchUrlArray(urlArray);
-            const customResults = await this.customResults(results);
-            const resultsWithTimestamp = this.addTimeStamp(customResults);
-            const status = await this.writeFile(resultsWithTimestamp, searchConfig.indexFilename);
-            this.userMessage(status,res,"Index written");
+            const results = await this.fetchUrlArray(urlArray, res);
+            const status = await this.processResults(results);
+            this.userMessage(status,res,"new index written");
         } catch (error) {
-            this.userMessage(false, res, "error try again", error);
+            this.userMessage(false,res,"error try again", error);
             console.log(error);
         }
     },
-    /* creates an array of urls to fetch */
+    processResults: async function(results) {
+        try {
+            const customResults = await this.customResults(results);
+            const resultsWithTimestamp = this.addTimeStamp(customResults);
+            let status = await this.writeFile(resultsWithTimestamp, searchConfig.indexFilename);
+            return status;
+        } catch (error) {
+            console.log(error);
+        }
+    },
     makeUrlArray: async function () {
         const teams = await this.readJsonFile(searchConfig.teamsFilename);
         let a = [];
@@ -42,40 +49,52 @@ const searchApp = {
     },
     /**
      * @param urlArray array of strings (urls)
+     * @param res Response object from express
      */
-    fetchUrlArray: async function (urlArray) {
-        console.log("crawling search API using url prefixes and keywords");
-        const lim = RateLimit(searchConfig.throttle); // throttle api calls   
-        const allResults = urlArray.map(async (url, index) => {
-            await lim();
-            return await fetch(url)
-                .then(res => res.json())
-                .then(json => {
-                    return this.resultTidy(json.results[0], url, index);
-                });
-        });
-
-        return await Promise.all(allResults);
+    fetchUrlArray: async function (urlArray,res) {
+        console.log("Start crawling search API using url prefixes and keywords");
+        const lim = RateLimit(searchConfig.throttle); // throttle api calls
+        try {
+            const allResults = urlArray.map(async (url, index) => {
+                await lim();
+                return await fetch(url)
+                    .then(res => res.json())
+                    .then(json => {
+                        return this.resultTidy(json.results[0], url, index);
+                    }).catch(err => console.error(err));
+            });
+            return await Promise.all(allResults);
+        } catch (error) {
+             this.userMessage(false, res, "problem with crawl - please try again.", error);
+             console.log(error);
+        }
+           
+        
     },
     /**
      * @param results array of objects
      */
     customResults: async function (results) {
-        const customResults = await this.readJsonFile(searchConfig.customFilename);
-        results.forEach(function (origItem) {
-            customResults.forEach(function (customItem) {
-                let customKeyword = customItem['keyword'].toLowerCase();
-                let origKeyword = origItem['keyword'].toLowerCase();
-                if (customKeyword === origKeyword) {
-                    if (customItem['link']) {
-                        origItem['link'] = customItem['link'];
+        try {
+            const customResults = await this.readJsonFile(searchConfig.customFilename);
+            results.forEach(function (origItem) {
+                customResults.forEach(function (customItem) {
+                    let customKeyword = customItem['keyword'].toLowerCase();
+                    let origKeyword = origItem['keyword'].toLowerCase();
+                    if (customKeyword === origKeyword) {
+                        if (customItem['link']) {
+                            origItem['link'] = customItem['link'];
+                        }
+                        origItem['title'] = customItem['title'];
                     }
-                    origItem['title'] = customItem['title'];
-                }
-            })
-        });
-        console.log('customise results success!')
-        return results;
+                })
+            });
+            console.log('customise results success!')
+            return results;
+        } catch (error) {
+            console.log(error);
+        }
+        
     },
     /**
      * @param customResults array of objects
@@ -147,15 +166,18 @@ const searchApp = {
      */
     updateFile: async function (req, res) {
         let filename = req.body.filename;
-        await this.deleteFile(filename); // delete old file;
-        await this.writeFile(JSON.parse(req.body.data), filename); // write newfile 
-        if (req.body.crawl) { // do fresh crawl
-            this.searchInit(res);
-        } else { // no crawl just update current index
-            const results = await this.readJsonFile(searchConfig.indexFilename);
-            const customResults = await this.customResults(results);
-            const status = await this.writeFile(customResults, searchConfig.indexFilename);
-            this.userMessage(status, res);
+        try {
+            await this.deleteFile(filename); 
+            await this.writeFile(JSON.parse(req.body.data), filename); 
+            if (req.body.crawl) { 
+                this.createNewIndex(res);
+            } else { // no crawl just update current index
+                const jsonFile = await this.readJsonFile(searchConfig.indexFilename);
+                const status = await this.processResults(jsonFile[0].searchdoc);
+                this.userMessage(status, res, "File saved and new index generated");
+            }
+        } catch (error) {
+            this.userMessage(false, res, "something went wrong..");
         }
     },
     /**
@@ -168,7 +190,7 @@ const searchApp = {
         if (status) {
             uxUpdate.message = message;
         } else {
-            uxUpdate.message = error;
+            uxUpdate.message = message + error;
         }
         res.json(uxUpdate);
     }
