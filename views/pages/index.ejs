@@ -18,14 +18,17 @@
     </a>
     <button type="button" class="btn btn-lg btn-default" v-on:click="createIndex" ><span
         class="glyphicon glyphicon-flash"></span>Create new index</button>
-    <a type="button" class="btn btn-lg btn-primary" href="/data/docs_to_index.json"><span class="glyphicon glyphicon-download"></span> Download index</a>
+    <a type="button" class="btn btn-lg btn-primary" href="/download"><span class="glyphicon glyphicon-download"></span> Download index</a>
   </div>
   
 </div>
 <div class="container">
 
+  
+
   <div class="alert alert-info text-center" v-if="message" role="alert">
-    {{ message }}
+    <strong>{{ message }}. </strong>
+    <span v-if="lastIndex">Updated on: {{ lastIndex }}</span>
   </div>
 
   <hr>

@@ -18,7 +18,7 @@ $.ajax({
     'url': "../data/docs_to_index.json",
     'dataType': "json",
     'success': function (res) {
-        data = res;
+        data = res[0].searchdoc;
         for (var i = 0; i < data.length; i++) {
             index.add(data[i]);
         }

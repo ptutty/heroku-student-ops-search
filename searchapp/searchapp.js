@@ -2,6 +2,8 @@ const _ = require('lodash');
 const fs = require("fs-extra");
 const del = require('del');
 const fetch = require("node-fetch");
+const date = require('date-and-time');
+const now = new Date();
 const {
     RateLimit
 } = require('async-sema'); // for throttling API calls
@@ -16,14 +18,15 @@ const searchApp = {
             const urlArray = await this.makeUrlArray();
             const results = await this.fetchUrlArray(urlArray);
             const customResults = await this.customResults(results);
-            const status = await this.writeFile(customResults, searchConfig.indexFilename);
-            this.userMessage(status, res);
+            const resultsWithTimestamp = this.addTimeStamp(customResults);
+            const status = await this.writeFile(resultsWithTimestamp, searchConfig.indexFilename);
+            this.userMessage(status,res,"Index written");
         } catch (error) {
+            this.userMessage(false, res, "error try again", error);
             console.log(error);
         }
     },
-
-    /* creates an array of api endpoints based on data from /data/teams.json */
+    /* creates an array of urls to fetch */
     makeUrlArray: async function () {
         const teams = await this.readJsonFile(searchConfig.teamsFilename);
         let a = [];
@@ -52,9 +55,8 @@ const searchApp = {
                 });
         });
 
-        return await Promise.all(allResults); 
+        return await Promise.all(allResults);
     },
-
     /**
      * @param results array of objects
      */
@@ -75,7 +77,17 @@ const searchApp = {
         console.log('customise results success!')
         return results;
     },
-
+    /**
+     * @param customResults array of objects
+     */
+    addTimeStamp: function (customResults) {
+        const resultsWithTS = [];
+        const i = {};
+        i.created = date.format(now, 'YYYY/MM/DD HH:mm:ss');
+        i.searchdoc = customResults;
+        resultsWithTS.push(i);
+        return resultsWithTS;
+    },
     /**
      * @param result object
      * @param url string
@@ -90,7 +102,6 @@ const searchApp = {
         delete result['siteDescription'];
         return result;
     },
-
     /**
      * @param filename string
      */
@@ -103,15 +114,14 @@ const searchApp = {
             console.error(err)
         }
     },
-
     /**
      * @param results array of objects
      * @param filename string
      */
     writeFile: async function (results, filename) {
-        await this.deleteFile(filename);
-        let fullPath = __dirname + "/../" + searchConfig.writePath + filename;
         try {
+            await this.deleteFile(filename);
+            let fullPath = __dirname + "/../" + searchConfig.writePath + filename;
             await fs.writeJson(fullPath, results);
             console.log(fullPath + ' write file success!')
             return true;
@@ -120,7 +130,6 @@ const searchApp = {
             return false;
         }
     },
-
     /**
      * @param filename string
      */
@@ -152,15 +161,16 @@ const searchApp = {
     /**
      * @param req status - boolean
      * @param res object - express response object
+     * @param error object - from searchinit try/catch
      */
-    userMessage: function (status, res) { 
-        let message;
+    userMessage: function (status, res, message, error) {
+        let uxUpdate = {};
         if (status) {
-            message = "Index successfully written";
+            uxUpdate.message = message;
         } else {
-            message = "There was a problem with writing file";
+            uxUpdate.message = error;
         }
-        res.send(message);
+        res.json(uxUpdate);
     }
 }
 

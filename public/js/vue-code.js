@@ -3,15 +3,21 @@ var app = new Vue({
     el: '#app',
     data() {
         return {
-            message: null
+            message: null,
+            lastIndex: null
         }
     },
     methods: {
-        createIndex: function (event) {
+        createIndex: async function (event) {
             this.message = "Polling API endpoints.. please wait"
-            axios
-                .get('/results')
-                .then(response => (this.message = response.data))
+            try {
+                const response = await axios.get('/results');
+                this.message = response.data.message;
+                this.lastIndex = response.data.lastIndex;
+            } catch (error) {
+                this.message = error
+            }
+
         },
         updateFile: function (updatedJson, filename, crawl) {
             this.message = "data updated and saved";
