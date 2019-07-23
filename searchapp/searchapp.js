@@ -18,21 +18,17 @@ const searchApp = {
             const urlArray = await this.makeUrlArray();
             const results = await this.fetchUrlArray(urlArray, res);
             const status = await this.processResults(results);
-            this.userMessage(status,res,"new index written");
+            this.userMessage(status, res, "new index written");
         } catch (error) {
-            this.userMessage(false,res,"error try again", error);
+            this.userMessage(false, res, "error try again", error);
             console.log(error);
         }
     },
-    processResults: async function(results) {
-        try {
-            const customResults = await this.customResults(results);
-            const resultsWithTimestamp = this.addTimeStamp(customResults);
-            let status = await this.writeFile(resultsWithTimestamp, searchConfig.indexFilename);
-            return status;
-        } catch (error) {
-            console.log(error);
-        }
+    processResults: async function (results) {
+        const customResults = await this.customResults(results);
+        const resultsWithTimestamp = this.addTimeStamp(customResults);
+        let status = await this.writeFile(resultsWithTimestamp, searchConfig.indexFilename);
+        return status;
     },
     makeUrlArray: async function () {
         const teams = await this.readJsonFile(searchConfig.teamsFilename);
@@ -51,50 +47,40 @@ const searchApp = {
      * @param urlArray array of strings (urls)
      * @param res Response object from express
      */
-    fetchUrlArray: async function (urlArray,res) {
+    fetchUrlArray: async function (urlArray, res) {
         console.log("Start crawling search API using url prefixes and keywords");
         const lim = RateLimit(searchConfig.throttle); // throttle api calls
-        try {
-            const allResults = urlArray.map(async (url, index) => {
-                await lim();
-                return await fetch(url)
-                    .then(res => res.json())
-                    .then(json => {
-                        return this.resultTidy(json.results[0], url, index);
-                    }).catch(err => console.error(err));
-            });
-            return await Promise.all(allResults);
-        } catch (error) {
-             this.userMessage(false, res, "problem with crawl - please try again.", error);
-             console.log(error);
-        }
-           
-        
+        const allResults = urlArray.map(async (url, index) => {
+            await lim();
+            return await fetch(url)
+                .then(res => res.json())
+                .then(json => {
+                    return this.resultTidy(json.results[0], url, index);
+                }).catch(err => {
+                    throw new Error(err);
+                });
+        });
+        return await Promise.all(allResults);
     },
     /**
      * @param results array of objects
      */
     customResults: async function (results) {
-        try {
-            const customResults = await this.readJsonFile(searchConfig.customFilename);
-            results.forEach(function (origItem) {
-                customResults.forEach(function (customItem) {
-                    let customKeyword = customItem['keyword'].toLowerCase();
-                    let origKeyword = origItem['keyword'].toLowerCase();
-                    if (customKeyword === origKeyword) {
-                        if (customItem['link']) {
-                            origItem['link'] = customItem['link'];
-                        }
-                        origItem['title'] = customItem['title'];
+        const customResults = await this.readJsonFile(searchConfig.customFilename);
+        results.forEach(function (origItem) {
+            customResults.forEach(function (customItem) {
+                let customKeyword = customItem['keyword'].toLowerCase();
+                let origKeyword = origItem['keyword'].toLowerCase();
+                if (customKeyword === origKeyword) {
+                    if (customItem['link']) {
+                        origItem['link'] = customItem['link'];
                     }
-                })
-            });
-            console.log('customise results success!')
-            return results;
-        } catch (error) {
-            console.log(error);
-        }
-        
+                    origItem['title'] = customItem['title'];
+                }
+            })
+        });
+        console.log('customise results success!')
+        return results;
     },
     /**
      * @param customResults array of objects
@@ -126,28 +112,23 @@ const searchApp = {
      */
     readJsonFile: async function (filename) {
         let fullPath = __dirname + "/../" + searchConfig.writePath + filename;
-        try {
-            const teams = await fs.readJson(fullPath);
-            return teams;
-        } catch (err) {
-            console.error(err)
-        }
+        const teams = await fs.readJson(fullPath).catch(err => {
+            throw new Error(err);
+        });
+        return teams;
     },
     /**
      * @param results array of objects
      * @param filename string
      */
     writeFile: async function (results, filename) {
-        try {
-            await this.deleteFile(filename);
-            let fullPath = __dirname + "/../" + searchConfig.writePath + filename;
-            await fs.writeJson(fullPath, results);
-            console.log(fullPath + ' write file success!')
-            return true;
-        } catch (err) {
-            console.error(err)
-            return false;
-        }
+        await this.deleteFile(filename);
+        let fullPath = __dirname + "/../" + searchConfig.writePath + filename;
+        await fs.writeJson(fullPath, results).catch(err => {
+            throw new Error(err);
+        })
+        console.log(fullPath + ' write file success!')
+        return true;
     },
     /**
      * @param filename string
@@ -157,6 +138,8 @@ const searchApp = {
             let fullpath = __dirname + "/../" + searchConfig.writePath + filename;
             await del([fullpath], {
                 force: true
+            }).catch(err => {
+                throw new Error(err);
             });
         }
     },
@@ -166,18 +149,14 @@ const searchApp = {
      */
     updateFile: async function (req, res) {
         let filename = req.body.filename;
-        try {
-            await this.deleteFile(filename); 
-            await this.writeFile(JSON.parse(req.body.data), filename); 
-            if (req.body.crawl) { 
-                this.createNewIndex(res);
-            } else { // no crawl just update current index
-                const jsonFile = await this.readJsonFile(searchConfig.indexFilename);
-                const status = await this.processResults(jsonFile[0].searchdoc);
-                this.userMessage(status, res, "File saved and new index generated");
-            }
-        } catch (error) {
-            this.userMessage(false, res, "something went wrong..");
+        await this.deleteFile(filename);
+        await this.writeFile(JSON.parse(req.body.data), filename);
+        if (req.body.crawl) {
+            this.createNewIndex(res);
+        } else { // no crawl just update current index
+            const jsonFile = await this.readJsonFile(searchConfig.indexFilename);
+            const status = await this.processResults(jsonFile[0].searchdoc);
+            this.userMessage(status, res, "File saved and new index generated");
         }
     },
     /**
