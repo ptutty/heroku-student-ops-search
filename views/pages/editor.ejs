@@ -17,7 +17,7 @@
 
                 <div id="app">
                     <button type="button" class="btn btn-lg btn-primary "
-                        v-on:click="updateFile(editor.getText(), filename, crawl)"><span
+                        v-on:click="updateFile(editor.getText(), filename)"><span
                             class="glyphicon glyphicon-flash"></span>Save and update search index</button>
                 </br></br>
 
@@ -36,14 +36,12 @@
         var options = {};
         var editor = new JSONEditor(container, options);
         var file = <%-JSON.stringify(slug)%>;
-        var filename, crawl;
+        var filename;
 
         if (file == "teams") {
             filename = "teams.json";
-            crawl = true;
         } else if (file == "custom") {
             filename = "custom.json";
-            crawl = false;
         }
 
         // set json

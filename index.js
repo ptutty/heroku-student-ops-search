@@ -16,8 +16,8 @@ express()
   .get('/editor/:id', (req, res) => res.render('pages/editor', {
     slug: req.params.id}))
   // endpoint to kick start API crawl and writing of json
-  .use('/create', (req, res) => searchApp.createNewIndex(res)) 
+  .use('/create', (req, res) => searchApp.apiCtrl(req, res, "create") )
   // endpoint for saving edits to the json file using jsoneditor
-  .post('/update', (req, res) => searchApp.updateFile(req,res))
+  .post('/update', (req, res) => searchApp.apiCtrl(req, res, "update") )
 
   .listen(PORT, () => console.log(`Listening on ${ PORT }`))

@@ -7,36 +7,65 @@ const now = new Date();
 const {
     RateLimit
 } = require('async-sema'); // for throttling API calls
-const searchConfig = require('./config/searchconfig'); // config for saving files /urls etc..
+const searchConfig = require('./config/searchconfig');
 
 const searchApp = {
     /**
-     * @param res Response object from express
+     * public interface for express endpoints
+     * calls methods based on express endpoint
+     * returns message to express
+     *
+     * @param {object} res response object from express 
+     * @param {object} req response object from express
+     * @param {string} verb create/update/delete/
      */
-    createNewIndex: async function (res) {
-        try {
-            const urlArray = await this.makeUrlArray();
-            const results = await this.fetchUrlArray(urlArray, res);
-            const status = await this.processResults(results);
-            this.userMessage(status, res, "new index written");
-        } catch (error) {
-            this.userMessage(false, res, "error try again", error);
-            console.log(error);
+    apiCtrl: async function(req, res, verb) {
+        if (verb == "create") {
+            let status = await this.createNewIndex();
+            let message = "New index created";
+            this.userMessage(status, res, message);
+            return;
+        }
+        if (verb == "update") {
+            let status = await this.updateFile(req);
+            let message = "file updated";
+            this.userMessage(status, res, message);
+            return;
         }
     },
+    /**
+     * intiates fresh search index
+     */
+    createNewIndex: async function () {
+        try {
+            const urlArray = await this.makeUrlArray();
+            const results = await this.fetchUrlArray(urlArray);
+            return await this.processResults(results);
+        } catch (error) {
+            console.log(error);
+            return false;
+        }
+    },
+    /**
+     * controls cusomisations of results, addition of timestamp and writing of results
+     * returns true if writing of file is sucessful
+     * 
+     * @param {array} results
+     */
     processResults: async function (results) {
         const customResults = await this.customResults(results);
         const resultsWithTimestamp = this.addTimeStamp(customResults);
-        let status = await this.writeFile(resultsWithTimestamp, searchConfig.indexFilename);
-        return status;
+        return await this.writeFile(resultsWithTimestamp, searchConfig.indexFilename);
     },
+    /**
+     * returns an array of urls based on teams.json
+     */
     makeUrlArray: async function () {
         const teams = await this.readJsonFile(searchConfig.teamsFilename);
         let a = [];
         teams.forEach(function (team) {
-            var apiUrl = searchConfig.apiBase + "urlPrefix=" + team.url + "&resultsPerPage=" + searchConfig.resultsNum;
-            // remove any possible duplicate keywords
-            let keywords = _.uniq(team.keywords);
+            var apiUrl = `${searchConfig.apiBase}urlPrefix=${team.url}&resultsPerPage=${searchConfig.resultsNum}`;
+            let keywords = _.uniq(team.keywords); // remove duplicate keywords
             for (i = 0; i < keywords.length; i++) {
                 a.push(apiUrl + "&q=" + keywords[i]);
             }
@@ -44,12 +73,13 @@ const searchApp = {
         return a;
     },
     /**
-     * @param urlArray array of strings (urls)
-     * @param res Response object from express
+     * returns an array of promises, each promise being a url fetch
+     * 
+     * @param {array} urlArray array of urls
      */
-    fetchUrlArray: async function (urlArray, res) {
-        console.log("Start crawling search API using url prefixes and keywords");
-        const lim = RateLimit(searchConfig.throttle); // throttle api calls
+    fetchUrlArray: async function (urlArray) {
+        console.log("Start crawling search API");
+        const lim = RateLimit(searchConfig.throttle);
         const allResults = urlArray.map(async (url, index) => {
             await lim();
             return await fetch(url)
@@ -63,7 +93,10 @@ const searchApp = {
         return await Promise.all(allResults);
     },
     /**
-     * @param results array of objects
+     * replaces url/titles in results with those matching keywords in custom.json 
+     * returns array of customised results
+     * 
+     * @param {array} results initial search results
      */
     customResults: async function (results) {
         const customResults = await this.readJsonFile(searchConfig.customFilename);
@@ -83,7 +116,10 @@ const searchApp = {
         return results;
     },
     /**
-     * @param customResults array of objects
+     * adds a timestamp to a json node and adds results to JSON node 
+     * returns json
+     * 
+     * @param {array} customResults
      */
     addTimeStamp: function (customResults) {
         const resultsWithTS = [];
@@ -94,9 +130,11 @@ const searchApp = {
         return resultsWithTS;
     },
     /**
-     * @param result object
-     * @param url string
-     * @param index integer 
+     * Tidy raw search results, adds id number, adds/removes fields 
+     * 
+     * @param {object} result 
+     * @param {string} url 
+     * @param {int} index  
      */
     resultTidy: function (result, url, index) {
         delete result['score'];
@@ -108,18 +146,22 @@ const searchApp = {
         return result;
     },
     /**
-     * @param filename string
+     * Reads a json file, returns json
+     * 
+     * @param {string} filename
      */
     readJsonFile: async function (filename) {
         let fullPath = __dirname + "/../" + searchConfig.writePath + filename;
-        const teams = await fs.readJson(fullPath).catch(err => {
+        const json = await fs.readJson(fullPath).catch(err => {
             throw new Error(err);
         });
-        return teams;
+        return json;
     },
     /**
-     * @param results array of objects
-     * @param filename string
+     * writes data to a file, returns truthy value if successful
+     * 
+     * @param {array} results array of objects
+     * @param {string} filename
      */
     writeFile: async function (results, filename) {
         await this.deleteFile(filename);
@@ -131,7 +173,9 @@ const searchApp = {
         return true;
     },
     /**
-     * @param filename string
+     * Deletes file
+     * 
+     * @param {string} filename 
      */
     deleteFile: async function (filename) {
         if (filename) {
@@ -144,32 +188,41 @@ const searchApp = {
         }
     },
     /**
-     * @param req object - express request object
-     * @param res object - express response object
+     * Updates a json file with data from frontend json editor
+     * 
+     * 
+     * @param {object} req express request object
      */
-    updateFile: async function (req, res) {
+    updateFile: async function (req) {
         let filename = req.body.filename;
         await this.deleteFile(filename);
         await this.writeFile(JSON.parse(req.body.data), filename);
-        if (req.body.crawl) {
-            this.createNewIndex(res);
-        } else { // no crawl just update current index
+
+        // depending on file updated, trigger new index crawl
+        // or just cusomise current index
+        if (filename == "custom.json" ) {
             const jsonFile = await this.readJsonFile(searchConfig.indexFilename);
-            const status = await this.processResults(jsonFile[0].searchdoc);
-            this.userMessage(status, res, "File saved and new index generated");
+            return await this.processResults(jsonFile[0].searchdoc);
+        }
+        if (filename == "teams.json") {
+            return await this.createNewIndex();
         }
     },
+
     /**
-     * @param req status - boolean
-     * @param res object - express response object
-     * @param error object - from searchinit try/catch
+     * returns a message object using express response
+     * 
+     * @param {boolean} status
+     * @param {object} res express response 
+     * @param {string} message
+     * @param {object} error
      */
-    userMessage: function (status, res, message, error) {
+    userMessage: function (status, res, message) {
         let uxUpdate = {};
         if (status) {
             uxUpdate.message = message;
         } else {
-            uxUpdate.message = message + error;
+            uxUpdate.message = "opps somethings went wrong";
         }
         res.json(uxUpdate);
     }

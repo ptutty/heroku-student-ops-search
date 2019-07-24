@@ -17,20 +17,16 @@ var app = new Vue({
             }
 
         },
-        updateFile: async function (updatedJson, filename, crawl) {
-            this.message = "Saving data ...and reindexing";
-            console.log("updatefile");
+        updateFile: async function (updatedJson, filename) {
+            this.message = "Saving data";
             let payload = {};
             payload.data = updatedJson;
             payload.filename = filename;
-            payload.crawl = crawl;
-            try {
-                let response = await axios.post('/update', payload);
-                this.message = response.data.message;
-            } catch (error) {
-                this.message = error
-            }
+            let response = await axios.post('/update', payload);
+            this.message = response.data.message;
+            if (filename == "teams.json") {
 
+            }
         }
     }
 })
