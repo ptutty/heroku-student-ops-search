@@ -3,7 +3,6 @@ const fs = require("fs-extra");
 const del = require('del');
 const fetch = require("node-fetch");
 const date = require('date-and-time');
-const now = new Date();
 const {
     RateLimit
 } = require('async-sema'); // for throttling API calls
@@ -124,7 +123,10 @@ const searchApp = {
     addTimeStamp: function (customResults) {
         const resultsWithTS = [];
         const i = {};
-        i.created = date.format(now, 'YYYY/MM/DD HH:mm:ss');
+        const now = new Date();
+        let lastWriteTime = date.format(now, 'hh:mm A [GMT]Z', true);
+        let lastWriteDate = date.format(now, 'ddd MMM DD YYYY');
+        i.created = lastWriteDate + " at " + lastWriteTime;
         i.searchdoc = customResults;
         resultsWithTS.push(i);
         return resultsWithTS;
