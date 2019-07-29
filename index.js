@@ -12,7 +12,8 @@ express()
   .set('view engine', 'ejs')
   .get('/', (req, res) => res.render('pages/index'))
   .get('/download', (req, res) => res.download("public/data/docs_to_index.json"))
-  // editing seed json file
+  .get('/downloadcustom', (req, res) => res.download("public/data/custom.json"))
+  .get('/downloadteams', (req, res) => res.download("public/data/teams.json"))
   .get('/editor/:id', (req, res) => res.render('pages/editor', {
     slug: req.params.id}))
   // endpoint to kick start API crawl and writing of json

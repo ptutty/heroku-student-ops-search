@@ -6,11 +6,10 @@ npm-debug.log
 *.env
 *.dev
 .DS_Store
+/public/data/custom.json
+/public/data/docs_to_index.json
+/public/data/teams.json
 
-# app data
-public/data/custom.json
-public/data/docs_to_index.json
-public/data/teams.json
 
 # Docker
 Dockerfile
