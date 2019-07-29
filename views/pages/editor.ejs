@@ -11,21 +11,30 @@
     <% include ../partials/nav.ejs %>
 
     <div class="container">
-        <h2>Edit <%- slug %> keyword list</h2>
-
-        <p>Edit JSON below and then save.<p>
-
                 <div id="app">
-                    <button type="button" class="btn btn-lg btn-primary "
-                        v-on:click="updateFile(editor.getText(), filename)"><span
-                            class="glyphicon glyphicon-flash"></span>Save and update search index</button>
-                </br></br>
+                     <div v-if="editmode">
+                        <h2>Edit <%- slug %> keyword list</h2>
 
-                    <div class="alert alert-info text-center" v-if="message" role="alert">
-                        {{ message }}
-                    </div>
+                        <p>Edit JSON below and then save.<p>
+
+                        <button type="button" class="btn btn-lg btn-primary"
+                            v-on:click="updateFile(editor.getText(), filename)"><span
+                                class="glyphicon glyphicon-flash"></span>Save and update search index</button>
+                        </br></br>
+
+                        <div class="alert alert-info text-center" v-if="message" role="alert">
+                            {{ message }}
+                        </div>
+
+                   </div>
+                   <div v-if="!editmode">
+                    <h2>Viewing search index</h2>
+
+                   </div>
 
                 </div>
+
+
                 <div id="jsoneditor" style="width: 100%; height: 100%;"></div>
 
     </div>
@@ -36,12 +45,17 @@
         var options = {};
         var editor = new JSONEditor(container, options);
         var file = <%-JSON.stringify(slug)%>;
-        var filename;
+        var filename, editmode;
 
         if (file == "teams") {
             filename = "teams.json";
+            editmode =  true;
         } else if (file == "custom") {
             filename = "custom.json";
+            editmode = true;
+        } else if (file == "viewall") {
+            filename = "docs_to_index.json";
+            editmode = false;
         }
 
         // set json
