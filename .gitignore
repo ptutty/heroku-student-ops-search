@@ -8,7 +8,7 @@ npm-debug.log
 .DS_Store
 
 # app data
-/data
+
 
 # Docker
 Dockerfile
