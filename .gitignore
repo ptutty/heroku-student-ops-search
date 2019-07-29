@@ -8,7 +8,9 @@ npm-debug.log
 .DS_Store
 
 # app data
-
+/data/custom.json
+/data/docs_to_index.json
+/data/teams.json
 
 # Docker
 Dockerfile
