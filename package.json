@@ -19,7 +19,7 @@
     "express": "^4.15.2",
     "fs-extra": "^8.1.0",
     "jsoneditor": "^6.1.0",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.19",
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
