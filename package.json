@@ -20,7 +20,7 @@
     "fs-extra": "^8.1.0",
     "jsoneditor": "^6.1.0",
     "lodash": "^4.17.11",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.1"
   },
   "devDependencies": {
     "request": "^2.81.0",
