@@ -16,7 +16,7 @@
     "date-and-time": "^0.8.1",
     "del": "^4.1.1",
     "ejs": "^2.5.6",
-    "express": "^4.15.2",
+    "express": "^4.17.3",
     "fs-extra": "^8.1.0",
     "jsoneditor": "^6.1.0",
     "lodash": "^4.17.11",
